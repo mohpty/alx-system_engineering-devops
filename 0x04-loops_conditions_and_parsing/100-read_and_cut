@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#displays the content of the file /etc/passwd.
+#script should only display:username, user id, Home directory.
+
+while read -r password;
+do
+    echo "Username: $username"
+    echo "User ID: $uid"
+    echo "Home Directory: $home"
+done < "/etc/passwd"
