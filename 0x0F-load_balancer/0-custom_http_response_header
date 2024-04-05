@@ -1,79 +1,32 @@
 #!/usr/bin/env bash
 # Installs Nginx with the following configurations:
-#  + Contains a custom HTTP header named X-Served-By.
-
 apt-get update
 apt-get install -y nginx
 
+mkdir -p /var/www/html
 
-echo -e "Updating and doing some minor checks...\n"
+touch /var/www/html/index.html
+echo "Hello World" > /var/www/html/index.html
 
-function install() {
-	command -v "$1" &> /dev/null
+touch /var/www/html/404.html
+echo "Ceci n'est pas une page" > /var/www/html/404.html
 
-	#shellcheck disable=SC2181
-	if [ $? -ne 0 ]; then
-		echo -e "	Installing: $1$\n"
-		sudo apt-get update -y -qq && \
-			sudo apt-get install -y "$1" -qq
-		echo -e "\n"
-	else
-		echo -e "	${1} is already installed.\n"
-	fi
-}
+printf %s "server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    add_header X-Served-By $HOSTNAME;
+    root   /var/www/html;
+    index  index.html index.htm;
 
-install nginx #install nginx
+    location /redirect_me {
+        return 301 http://cuberule.com/;
+    }
 
-echo -e "\nSetting up some minor stuff.\n"
+    error_page 404 /404.html;
+    location /404 {
+      root /var/www/html;
+      internal;
+    }
+}" > /etc/nginx/sites-available/default
 
-sudo ufw allow 'Nginx HTTP'
-
-if [ -d "/var/www" ]; then
-	sudo chown -R "$USER":"$USER" /var/www
-	sudo chmod -R 755 /var/www
-else
-	sudo mkdir -p /var/www
-	sudo chown -R "$USER":"$USER" /var/www
-	sudo chmod -R 755 /var/www
-fi
-
-for dir in /var/www/{html,error}; do
-	if ! [ -d "$dir" ]; then
-		mkdir -p "$dir"
-	fi
-done
-
-echo "Hello World!" > /var/www/html/index.html
-
-echo "Ceci n'est pas une page" > /var/www/html/error_404.html
-
-sudo cp /etc/nginx/sites-enabled/default nginx-sites-enabled_default.backup
-
-server_config=\
-"server {
-		listen 80 default_server;
-		listen [::]:80 default_server;
-		root /var/www/html;
-		index index.html index.htm index.nginx-debian.html
-		server_name_;
-		add_header X-Served-By \$hostname;
-		location / {
-			try_files \$uri \$uri/ =404;
-		}
-		if (\$request_filename ~ redirect_me){
-			rewrite ^ https://th3-gr00t.tk/ permanent;
-		}
-		error_page 404 /error_404.html;
-		location = /error_404.html {
-			internal;
-		}
-}"
-
-#shellcheck disable=SC2154
-echo "$server_config" | sudo dd status=none of=/etc/nginx/sites-enabled/default
-
-if [ "$(pgrep -c nginx)" -le 0 ]; then
-	sudo service nginx start
-else
-	sudo service nginx restart
-fi
+service nginx restart
