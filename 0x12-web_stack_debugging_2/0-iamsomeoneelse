@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#run the `whoami` command as another user
+
+function who_really_am_i(){
+    if [[ -z "$1" ]]; then
+        echo -e "Which user should we run as?"
+    else
+        sudo su "$1" -s /bin/bash --command=whoami
+    fi
+
+}
+
+who_really_am_i "$1"
