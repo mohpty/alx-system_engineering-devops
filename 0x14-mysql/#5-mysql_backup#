@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # setup a backup of all the databases
-
 day=$(date +"%d")
 month=$(date +"%m")
 year=$(date +"%Y")
